@@ -12,7 +12,7 @@ Topics its subscribes to:
 <br>  */ardrone/navdata          : For the quad altitude
 <br>  */autopilot/command        : To publish commands for the autopilot (std_msgs/String)
 <br>  */autopilot/cmd_vel        : To publish manual velocity to the quad which overrides the autopilot (geometry_msgs/Twist)
-<br>  */autopilot/coordinate     : To publish target grid coordiate for grid following (geometry_msgs/Point)
+<br>  */autopilot/coordinate     : To publish target grid coordiate for grid following (geometry_msgs/Point32)
 </p>
 
 <p>
