@@ -15,15 +15,23 @@
 using namespace cv;
 using namespace std;
 
+//Quad live testing
+bool live = true;
+
 // Global frame information
 int fx,fy = 0;
+
 
 //Color based filtering parameters
 int h_th = 60;
 int s_th = 60;
 int v_th = 30;
-int color_h = 29;
-int color_s = 71;
+//int color_h = 29; 
+//int color_s = 71;
+
+int color_h = 142; 
+int color_s = 100;
+
 
 Point image_center(0,0);
 
@@ -68,7 +76,7 @@ Point grid_point(0,0);
 int intersection_line[2];
 bool inner = false;
 int outer_radi = 100;
-bool move_next = false;
+bool on_node = false;
 
 
 // Function to find intersection between two lines
@@ -108,7 +116,8 @@ public:
     takeoff_pub = nh_.advertise<std_msgs::Empty>("/ardrone/takeoff", 1000);
     reset_pub = nh_.advertise<std_msgs::Empty>("/ardrone/reset", 1000);
     land_pub = nh_.advertise<std_msgs::Empty>("/ardrone/land", 1000);
-    controls_pub = nh_.advertise<geometry_msgs::Twist>("/quad/cmd_vel", 1000);
+    if(live == true)controls_pub = nh_.advertise<geometry_msgs::Twist>("/quad/cmd_vel", 1000);
+    else controls_pub = nh_.advertise<geometry_msgs::Twist>("/ardrone/cmd_vel", 1000);
     cv::namedWindow("hough");   
     cv::namedWindow("image");
     cv::namedWindow("sliders");
@@ -131,7 +140,7 @@ public:
   	command.angular.z = pza;   
 
   	controls_pub.publish(command);
-  	ROS_INFO("Publishing Velocity: %f %f %f",pxv,pyv,pzv);
+  	//ROS_INFO("Publishing Velocity: %f %f %f",pxv,pyv,pzv);
   }
 
   //Arrange the points based on priority
@@ -376,32 +385,27 @@ public:
   		//ROS_INFO("%f",theta);
 
   		int error = norm(image_center - target_point);
-  		ROS_INFO("error: %d",error);
+  		//ROS_INFO("error: %d",error);
 
-  		if(error > point_th && point_send == false)
-  		{
+  		
   			pyv = sin((float)(theta*CV_PI)/180 )*vx_max;
   			pxv = cos((float)(theta*CV_PI)/180 )*vx_max;
   			publish_velocities();
-  			return false;
-  		}
   		
-  		if(error > outer_radi && point_send == true)
-  		{
-  			point_send = false;
-  			//ROS_INFO("Outside");
-  		}
   		
-
-  		if(error < point_th && point_send == false)
-  		{
-	  		pxv = pyv = 0;
-	  		publish_velocities();
-  			//ROS_INFO("Stop");
-	  		point_send = true;
-	  		return true;
-  		}
+  		
   		return false;  		
+  	}
+
+  	//Stop
+
+  	void stop()
+  	{
+  		pxv = pyv = 0;
+  		publish_velocities();
+
+  		//publish_velocities();publish_velocities();publish_velocities();publish_velocities();publish_velocities();publish_velocities();publish_velocities();
+  		//ROS_INFO("Stop");
   	}
 
   //Manual Velocity Override
@@ -532,6 +536,7 @@ public:
     // Grid Follow
     else if(received_command == "grid" && node_hold == true)
     {
+    	node_hold = false;
     	ROS_INFO("Starting Grid follower to reach %d,%d",grid_point.x,grid_point.y);
     	grid_follow = true;    	
     }
@@ -785,8 +790,29 @@ public:
        // Node Hold
        if(node_hold == true && nearest_intersection != Point(0,0))
        {
-       	target_point = nearest_intersection;
-       	point_tracker();
+       		target_point = nearest_intersection;
+       		int error = norm(image_center - target_point);
+
+       		if(error > outer_radi)
+       		{
+       			//ROS_INFO("I am tracking");
+				point_tracker();
+       		}
+
+       		if(error > outer_radi ) {point_send = false; //ROS_INFO("I am falseing");
+       		}
+
+       		if (point_send == false && error < point_th)
+       		{
+       			ROS_INFO("I am stopping node_hold");
+       			stop();
+       			
+       			point_send = true;
+       		}
+
+       		//ROS_INFO("%d",point_send);
+
+
        }
 
        // Grid Follow
@@ -809,7 +835,12 @@ public:
        					//ROS_INFO("Targeting the node on the right");
        				}*/
 
-       				if(  norm(image_center - pt4) - (norm(nearest_intersection - pt4) + norm(nearest_intersection - image_center)) == 0 && )
+       				if(norm(image_center - nearest_intersection) > 300)
+       				{
+       					on_node = false;
+       				}
+
+       				if(  nearest_intersection.x > image_center.x && on_node == false)
        				{
        					target_point = nearest_intersection;
        				}
@@ -823,13 +854,13 @@ public:
 
        			else // Move to the left
        			{
-       				if(l != Point(0,0))
+       				/*if(l != Point(0,0))
        				{
        					target_point = l;
        					//ROS_INFO("Targeting the node on the left");
-       				}
+       				}*/
 
-       				else if(  norm(image_center - pt3) - (norm(nearest_intersection - pt3) + norm(nearest_intersection - image_center)) == 0)
+       				if(  nearest_intersection.x < image_center.x && on_node == false)
        				{
        					target_point = nearest_intersection;
        				}
@@ -840,20 +871,47 @@ public:
        					//ROS_INFO("Targeting left line point");
        				}
        			}
-       			if(point_tracker() == true) {grid_point.x = grid_point.x-1; ROS_INFO("Moving next");}
+       			int error = norm(image_center - target_point);
+
+	       		if(error > outer_radi)
+	       		{
+	       			//ROS_INFO("I am tracking");
+					point_tracker();
+	       		}
+
+	       		if(error > outer_radi ) {point_send = false; //ROS_INFO("I am falseing");
+	       		}
+
+	       		if (point_send == false && error < point_th)
+	       		{
+	       			ROS_INFO("I am stopping***************");
+	       			grid_point.x = grid_point.x-1;
+	       			ROS_INFO("********* GRID POINT :: %d",grid_point.x);
+	       			on_node = true;
+	       			//stop();
+	       			
+	       			point_send = true;
+	       		}
+
+       			
        		}
 
        		else if(grid_point.y != 0)
        		{
        			if(grid_point.y < 0) // Move to the bottom
        			{
-       				if(b != Point(0,0))
+       				/*if(b != Point(0,0))
        				{
        					target_point = b;
        					//ROS_INFO("Targeting the node below");
+       				}*/
+
+       				if(norm(image_center - nearest_intersection) > 300)
+       				{
+       					on_node = false;
        				}
 
-       				else if(  norm(image_center - pt2) - (norm(nearest_intersection - pt2) + norm(nearest_intersection - image_center)) == 0)
+       				if(  nearest_intersection.y > image_center.y && on_node == false)
        				{
        					target_point = nearest_intersection;
        				}
@@ -867,13 +925,18 @@ public:
 
        			else // Move to the top
        			{
-       				if(t != Point(0,0))
+       				/*if(t != Point(0,0))
        				{
        					target_point = t;
        					//ROS_INFO("Targeting the node above");
+       				}*/
+
+       				if(norm(image_center - nearest_intersection) > 300)
+       				{
+       					on_node = false;
        				}
 
-       				else if(  norm(image_center - pt1) - (norm(nearest_intersection - pt1) + norm(nearest_intersection - image_center)) == 0)
+       				if(  nearest_intersection.y < image_center.y && on_node == false)
        				{
        					target_point = nearest_intersection;
        				}
@@ -884,7 +947,32 @@ public:
        					//ROS_INFO("Targeting line point above");
        				}
        			}
-       			if(point_tracker() == true) {grid_point.y = grid_point.y-1; ROS_INFO("Moving next"); }
+       			int error = norm(image_center - target_point);
+
+	       		if(error > outer_radi)
+	       		{
+	       			//ROS_INFO("I am tracking");
+					point_tracker();
+	       		}
+
+	       		if(error > outer_radi ) {point_send = false; //ROS_INFO("I am falseing");
+	       	}
+
+	       		if (point_send == false && error < point_th)
+	       		{
+	       			ROS_INFO("I am stopping point_send");
+	       			grid_point.y = grid_point.y-1;
+	       			on_node = true;
+	       			//stop();
+	       			
+	       			point_send = true;
+	       		}
+       		}
+
+       		else 
+       		{
+       			grid_follow = false;
+       			node_hold = true;
        		}
        }
 
