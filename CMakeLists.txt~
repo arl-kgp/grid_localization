@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(autopilot)
+project(grid_localization)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -169,7 +169,16 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable(autopilot_node src/autopilot_node.cpp)
-target_link_libraries(autopilot_node ${catkin_LIBRARIES})
-add_dependencies(autopilot_node autopilot_generate_messages_cpp)
+add_executable(grid_localization_node src/grid_localization_node.cpp)
+target_link_libraries(grid_localization_node ${catkin_LIBRARIES})
+add_dependencies(grid_localization_node grid_localization_generate_messages_cpp)
+
+add_executable(altipid_node src/altipid.cpp)
+target_link_libraries(altipid_node ${catkin_LIBRARIES})
+
+add_executable(altipid_mod_node src/altipid_mod.cpp)
+target_link_libraries(altipid_mod_node ${catkin_LIBRARIES})
+
+add_executable(pid_node src/pid.cpp)
+target_link_libraries(pid_node ${catkin_LIBRARIES})
 

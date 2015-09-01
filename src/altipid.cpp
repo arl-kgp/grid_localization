@@ -106,14 +106,15 @@ int main(int argc, char **argv)
        m.linear.x = 0.0;  
         
        double z1,y1;
-       double z = 600.0;
-       double y =0.0;
+       double z = 1000.0;
+       double y =45.0;
        z1 = msg_in.altd;
        //don't use this conversion   use library for conversion
        y1 = yaw*180/PI;
        double error,pre_error,integral,derivative,errory,pre_errory,integraly,derivativey;
        integral =0;
        integraly = 0;
+       pre_error = 0;
        pre_errory = 0;
        double kp,ki,kd,kpy,kiy,kdy;
        if(argc > 1)
@@ -191,7 +192,7 @@ int main(int argc, char **argv)
 	 m.angular.z = 0;
    
        twist.publish(m);
-       ROS_INFO("%lf %lf %lf %lf %lf",z1,error,y1,errory,m.angular.z); 
+       ROS_INFO("%lf %lf %lf %lf %lf %lf",z1,error,m.linear.z,y1,errory,m.angular.z); 
 	
    pre_error = error;
 	  z1 = msg_in.altd;

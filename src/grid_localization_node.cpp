@@ -61,7 +61,7 @@ float pya = 0;
 float pza = 0;
 
 
-int holding_altitude = 1080; // in cm
+int holding_altitude = 1000; // in cm
 bool altitude_hold = false;
 int alt_th = 5;
 bool alt_send = false;
@@ -71,7 +71,7 @@ bool first_mag = true;
 int ex_pid = 0;
 int ey_pid = 0;
 int z_pid = holding_altitude;
-float m_pid = 0;
+float m_pid = 45;
 
 bool node_hold = false;
 int point_th = 40;
@@ -111,7 +111,7 @@ class ImageConverter
   ros::Publisher pid_pub;
   ros::Subscriber autopilot_cmd_vel_sub;
   ros::Subscriber coordinate_sub;
-  ros::Subscriber magnetic_sub;
+  //ros::Subscriber magnetic_sub;
   
 public:
   ImageConverter()
@@ -122,11 +122,11 @@ public:
     command_sub = nh_.subscribe("/autopilot/command", 1000, &ImageConverter::commandCb,this);
     autopilot_cmd_vel_sub = nh_.subscribe("/autopilot/cmd_vel", 1000, &ImageConverter::cmdvelCb,this);
     coordinate_sub = nh_.subscribe("/autopilot/coordinate", 1000, &ImageConverter::coordinateCb,this);
-    magnetic_sub = nh_.subscribe("/ardrone/mag", 1000, &ImageConverter::magneticCb,this);
+    //magnetic_sub = nh_.subscribe("/ardrone/mag", 1000, &ImageConverter::magneticCb,this);
     takeoff_pub = nh_.advertise<std_msgs::Empty>("/ardrone/takeoff", 1000);
     reset_pub = nh_.advertise<std_msgs::Empty>("/ardrone/reset", 1000);
     land_pub = nh_.advertise<std_msgs::Empty>("/ardrone/land", 1000);
-    controls_pub = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1000);
+    //controls_pub = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1000);
     pid_pub = nh_.advertise<geometry_msgs::Twist>("destination/pose", 1000);
     cv::namedWindow("hough");   
     cv::namedWindow("image");
@@ -139,7 +139,7 @@ public:
   }
 
   //Main function to change quad velocity
-  void publish_velocities()
+  /*void publish_velocities()
   {
   	geometry_msgs::Twist command;
   	command.linear.y = -pxv;
@@ -151,7 +151,7 @@ public:
 
   	controls_pub.publish(command);
   	//ROS_INFO("Publishing Velocity: %f %f %f",pxv,pyv,pzv);
-  }
+  }*/
 
   //Main function to publish targets to pid
   void publish_targets()
@@ -459,7 +459,7 @@ public:
   	pya = msg->angular.y;
   	pza = msg->angular.z;  	
 
-  	publish_velocities();
+  	//publish_velocities();
   }
 
   // Callback function for navdata
@@ -472,20 +472,20 @@ public:
   		{
   			pzv = vz_max;
   			alt_send = true;
-  			publish_velocities();
+  			//publish_velocities();
   		}
   		else if(present_altitude > holding_altitude + alt_th)
   		{
   			pzv = -vz_max;
   			alt_send = true;
-  			publish_velocities();
+  			//publish_velocities();
   		}
   		else
   		{
   			pzv = 0;
   			if(alt_send == true)
   			{
-  				publish_velocities();
+  				//publish_velocities();
   				alt_send = false;
   			}
   			
@@ -503,7 +503,7 @@ public:
   }
 
   // Callback function for magnetic
-  void magneticCb(const geometry_msgs::Vector3Stamped::ConstPtr& msg)
+  /*void magneticCb(const geometry_msgs::Vector3Stamped::ConstPtr& msg)
   {
     if(first_mag == true && msg->vector.y != 0)
     {
@@ -511,7 +511,7 @@ public:
       ROS_INFO("Will hold the magnetic: %f",m_pid);
       first_mag = false;
     }    
-  }
+  }*/
 
   void commandCb(const std_msgs::String::ConstPtr& msg)
   {
