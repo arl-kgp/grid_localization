@@ -184,7 +184,7 @@ int main(int argc, char **argv)
           regiony = 5;
         else
 	regiony = 10;
-         msgpos_in.angular.z;
+        y = msgpos_in.angular.z;
 		     errory = (y - y1);
        integraly = integraly + errory;
        derivativey = errory-pre_errory;

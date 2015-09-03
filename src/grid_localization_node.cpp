@@ -61,7 +61,7 @@ float pya = 0;
 float pza = 0;
 
 
-int holding_altitude = 1000; // in cm
+int holding_altitude = 800; // in cm
 bool altitude_hold = false;
 int alt_th = 5;
 bool alt_send = false;
@@ -71,10 +71,11 @@ bool first_mag = true;
 int ex_pid = 0;
 int ey_pid = 0;
 int z_pid = holding_altitude;
-float m_pid = 45;
+float m_pid = 90;
+int present_altitude = 0;
 
 bool node_hold = false;
-int point_th = 40;
+int point_th = 20;
 Point target_point;
 bool point_send = false;
 
@@ -82,7 +83,7 @@ bool grid_follow = false;
 Point grid_point(0,0);
 int intersection_line[2];
 bool inner = false;
-int outer_radi = 100;
+int outer_radi = 40;
 bool on_node = false;
 
 
@@ -464,10 +465,11 @@ public:
 
   // Callback function for navdata
   void navdataCb(const grid_localization::Navdata::ConstPtr& msg)
-  {  	
+  {  
+  	present_altitude = msg->altd;	
   	if(altitude_hold == true)
   	{
-  		int present_altitude = msg->altd;
+  		
   		if(present_altitude < holding_altitude - alt_th)
   		{
   			pzv = vz_max;
@@ -863,9 +865,29 @@ public:
        		}
 
        		//ROS_INFO("%d",point_send);
-
-
        }
+
+       /*if(node_hold == true && nearest_intersection != Point(0,0))
+       {
+       		target_point = nearest_intersection;
+       		int error = norm(image_center - target_point);
+
+       		if(error > outer_radi)
+       		{
+       			//ROS_INFO("I am tracking");
+				    point_tracker();
+       		}
+
+       		else
+       		{
+       			ROS_INFO("I am stopping node_hold");
+       			stop();
+       		}
+
+       		
+       }*/
+
+
 
        // Grid Follow
        if(grid_follow == true)
@@ -1042,6 +1064,13 @@ public:
       command.angular.z = m_pid;
       command.angular.x = 0;
       command.angular.y = 0;   
+
+      if(abs(present_altitude - z_pid) > 100 )
+      {
+      	command.linear.y = 0;
+      	command.linear.x = 0;
+      	ROS_INFO("I am stopping x y error");
+      }
 
       pid_pub.publish(command);
 
